@@ -21,7 +21,7 @@ export default function App() {
   // E.g., http://192.168.1.100:3000
   // For iOS simulator, http://localhost:3000 works.
   // For Android emulator, http://10.0.2.2:3000 works.
-  const webUrl = process.env.EXPO_PUBLIC_WEB_URL || 'http://localhost:3000';
+  const webUrl = process.env.EXPO_PUBLIC_WEB_URL || 'https://openpumta.com/';
 
   useEffect(() => {
     registerForPushNotificationsAsync().then((token) => {
