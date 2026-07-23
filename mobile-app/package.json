@@ -13,6 +13,7 @@
   },
   "devDependencies": {
     "@types/react": "~19.1.17",
+    "metro-runtime": "^0.87.0",
     "typescript": "~5.9.3"
   },
   "scripts": {
