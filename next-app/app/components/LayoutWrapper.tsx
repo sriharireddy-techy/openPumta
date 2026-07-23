@@ -18,6 +18,35 @@ export default function LayoutWrapper({ children }: { children: React.ReactNode 
     () => false,
   );
 
+  React.useEffect(() => {
+    const handleExpoToken = async (e: Event) => {
+      const customEvent = e as CustomEvent;
+      const token = customEvent.detail;
+      if (token) {
+        try {
+          const api = (await import('@/lib/api')).default;
+          await api.post('/user/push-token', { expoPushToken: token });
+          console.log('Expo push token registered successfully');
+        } catch (error) {
+          console.error('Failed to register expo push token', error);
+        }
+      }
+    };
+
+    window.addEventListener('expoTokenReady', handleExpoToken);
+
+    // Check if it's already set (in case the event fired before React mounted)
+    // @ts-expect-error global property
+    if (window.EXPO_PUSH_TOKEN) {
+      // @ts-expect-error global property
+      handleExpoToken(new CustomEvent('expoTokenReady', { detail: window.EXPO_PUSH_TOKEN }));
+    }
+
+    return () => {
+      window.removeEventListener('expoTokenReady', handleExpoToken);
+    };
+  }, []);
+
   return (
     <>
       <OnboardingModal />
