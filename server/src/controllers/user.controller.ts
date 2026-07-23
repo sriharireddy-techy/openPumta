@@ -87,4 +87,31 @@ const getLifetimeFocusTime = asyncHandler(async (req: Request, res: Response) =>
     .json(new ApiResponse(200, { lifetimeFocusMs: totalMs }, 'Lifetime focus fetched'));
 });
 
-export { getAllUsers, addUser, updateUser, deleteUser, getLifetimeFocusTime };
+const savePushToken = asyncHandler(async (req: Request, res: Response) => {
+  const userId = req.user ? (req.user as { id: number }).id : null;
+  if (!userId) {
+    throw new ApiError(401, 'Unauthorized');
+  }
+
+  const { expoPushToken } = req.body;
+  if (!expoPushToken) {
+    throw new ApiError(400, 'Expo push token is required');
+  }
+
+  const updatedUser = await prisma.user.update({
+    where: { id: userId },
+    data: { expoPushToken },
+  });
+
+  return res
+    .status(200)
+    .json(
+      new ApiResponse(
+        200,
+        { expoPushToken: updatedUser.expoPushToken },
+        'Push token saved successfully',
+      ),
+    );
+});
+
+export { getAllUsers, addUser, updateUser, deleteUser, getLifetimeFocusTime, savePushToken };
