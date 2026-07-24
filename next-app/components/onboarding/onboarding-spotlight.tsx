@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
 interface SpotlightRect {
@@ -18,105 +18,130 @@ interface OnboardingSpotlightProps {
 
 export function OnboardingSpotlight({ targetId, visible, padding = 10 }: OnboardingSpotlightProps) {
   const [rect, setRect] = useState<SpotlightRect | null>(null);
+  // Keep a ref to avoid stale closures in the scroll/resize handlers
+  const targetIdRef = useRef(targetId);
+  const paddingRef = useRef(padding);
+  targetIdRef.current = targetId;
+  paddingRef.current = padding;
 
-  const updateRect = useCallback(() => {
-    if (!targetId) return;
-    const el = document.querySelector(`[data-tour-highlight="${targetId}"]`);
+  const measureRect = useCallback(() => {
+    const id = targetIdRef.current;
+    if (!id) return;
+    const el = document.querySelector(`[data-tour-highlight="${id}"]`);
     if (!el) return;
-
     const r = el.getBoundingClientRect();
-    setRect({
-      top: r.top - padding,
-      left: r.left - padding,
-      width: r.width + padding * 2,
-      height: r.height + padding * 2,
-    });
-  }, [targetId, padding]);
+    const p = paddingRef.current;
+    setRect({ top: r.top - p, left: r.left - p, width: r.width + p * 2, height: r.height + p * 2 });
+  }, []);
 
-  // Reset rect immediately when target changes to avoid stale highlight
+  // ── Find element, scroll it into view, then measure after scroll settles ───
   useEffect(() => {
-    setRect(null);
-  }, [targetId]);
+    if (!visible || !targetId) {
+      // Clear rect when not visible or no target
+      if (!visible) setRect(null);
+      return;
+    }
 
-  // Handle initial focus and scrolling when target changes
-  useEffect(() => {
-    if (!visible || !targetId) return;
-
-    let timer: ReturnType<typeof setTimeout>;
+    let rafId: number;
+    let pollTimer: ReturnType<typeof setTimeout>;
+    let scrollTimer: ReturnType<typeof setTimeout>;
     let attempts = 0;
-    const maxAttempts = 30; // Up to 3 seconds of polling
+    const MAX_ATTEMPTS = 40; // 4 seconds max
 
-    const tryFocus = () => {
+    const measureAfterScroll = () => {
+      // Give scroll animation time to settle (smooth scroll takes ~300-600ms)
+      clearTimeout(scrollTimer);
+      scrollTimer = setTimeout(() => {
+        rafId = requestAnimationFrame(measureRect);
+      }, 350);
+    };
+
+    const tryFindAndScroll = () => {
       const el = document.querySelector(`[data-tour-highlight="${targetId}"]`);
       if (el) {
-        // Element found, scroll it into view and update highlight
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        updateRect();
-      } else if (attempts < maxAttempts) {
-        // Element not yet rendered, keep trying
+        measureAfterScroll();
+      } else if (attempts < MAX_ATTEMPTS) {
         attempts++;
-        timer = setTimeout(tryFocus, 100);
+        pollTimer = setTimeout(tryFindAndScroll, 100);
       }
     };
 
-    // Wait a short moment to allow page transitions to begin
-    timer = setTimeout(tryFocus, 300);
+    // Small initial delay to let page transition begin rendering
+    pollTimer = setTimeout(tryFindAndScroll, 200);
 
-    return () => clearTimeout(timer);
-  }, [visible, targetId, updateRect]);
+    return () => {
+      clearTimeout(pollTimer);
+      clearTimeout(scrollTimer);
+      cancelAnimationFrame(rafId);
+    };
+  }, [visible, targetId, measureRect]);
 
-  // Keep spotlight attached to the element during resize and scroll
+  // ── Re-measure on resize (element may reflow) ─────────────────────────────
+  useEffect(() => {
+    if (!visible || !rect) return;
+
+    const onResize = () => {
+      requestAnimationFrame(measureRect);
+    };
+
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, [visible, rect, measureRect]);
+
+  // ── Re-measure after any scroll (catches manual scrolling during tour) ────
   useEffect(() => {
     if (!visible) return;
 
-    window.addEventListener('resize', updateRect);
-    window.addEventListener('scroll', updateRect, true);
-
-    return () => {
-      window.removeEventListener('resize', updateRect);
-      window.removeEventListener('scroll', updateRect, true);
+    let rafId: number;
+    const onScroll = () => {
+      cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(measureRect);
     };
-  }, [visible, updateRect]);
 
-  if (!rect) return null;
+    window.addEventListener('scroll', onScroll, { capture: true, passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll, { capture: true });
+      cancelAnimationFrame(rafId);
+    };
+  }, [visible, measureRect]);
 
   return (
     <AnimatePresence>
-      {visible && (
+      {visible && rect && (
         <>
-          {/* Dark overlay in 4 pieces around the spotlight hole */}
-          {/* Top */}
+          {/* Shadow overlay with cutout hole using box-shadow */}
           <motion.div
+            key={`spotlight-shadow-${targetId}`}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="fixed pointer-events-none z-40"
+            transition={{ duration: 0.25 }}
+            className="fixed pointer-events-none z-[98]"
             style={{
-              background: 'transparent',
-              // Use box-shadow trick: clip everything except the rect hole
-              boxShadow: `0 0 0 9999px rgba(0, 0, 0, 0.65)`,
               top: rect.top,
               left: rect.left,
               width: rect.width,
               height: rect.height,
               borderRadius: '12px',
+              boxShadow: '0 0 0 9999px rgba(0,0,0,0.65)',
             }}
           />
-          {/* Glowing ring around the target */}
+          {/* Glowing ring */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.97 }}
+            key={`spotlight-ring-${targetId}`}
+            initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.35, delay: 0.1 }}
-            className="fixed pointer-events-none z-40 rounded-xl"
+            transition={{ duration: 0.3, delay: 0.05 }}
+            className="fixed pointer-events-none z-[98]"
             style={{
               top: rect.top,
               left: rect.left,
               width: rect.width,
               height: rect.height,
-              boxShadow: '0 0 0 2px rgba(249,115,22,0.8), 0 0 24px 4px rgba(249,115,22,0.25)',
               borderRadius: '12px',
+              boxShadow: '0 0 0 2px rgba(249,115,22,0.85), 0 0 28px 6px rgba(249,115,22,0.2)',
             }}
           />
         </>
