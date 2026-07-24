@@ -3,6 +3,7 @@ import Link from 'next/link';
 
 import Image from 'next/image';
 import { SignupForm } from '@/components/signup-form';
+import { AuthSlideshow } from '@/components/auth-slideshow';
 
 export default function SignupPage() {
   return (
@@ -20,13 +21,8 @@ export default function SignupPage() {
           </div>
         </div>
       </div>
-      <div className="bg-muted relative hidden lg:block">
-        <Image
-          src="/file.svg"
-          alt="Image"
-          fill
-          className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
-        />
+      <div className="hidden lg:block relative h-full">
+        <AuthSlideshow />
       </div>
     </div>
   );

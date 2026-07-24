@@ -1,6 +1,7 @@
 'use client';
 import Image from 'next/image';
 import { LoginForm } from '@/components/login-form';
+import { AuthSlideshow } from '@/components/auth-slideshow';
 import Link from 'next/link';
 
 export default function LoginPage() {
@@ -19,13 +20,8 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-      <div className="bg-muted relative hidden lg:block">
-        <Image
-          src="/file.svg"
-          alt="Image"
-          fill
-          className="absolute inset-0 h-full w-full object-cover dark:brightness-[0.2] dark:grayscale"
-        />
+      <div className="hidden lg:block relative h-full">
+        <AuthSlideshow />
       </div>
     </div>
   );
