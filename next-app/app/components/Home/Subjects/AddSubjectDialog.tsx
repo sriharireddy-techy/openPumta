@@ -96,6 +96,7 @@ export function AddSubjectDialog({ habits, empty }: AddSubjectDialogProps) {
             'rounded-xl bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90 font-medium',
             (empty || showNudge) && 'nudge-strobe',
           )}
+          data-tour-highlight="add-subject-btn"
         >
           + Add Subject
         </Button>

@@ -101,6 +101,7 @@ export function AddHabitDialog({ subjects, habitsCount }: AddHabitDialogProps) {
           size="sm"
           disabled={habitsCount >= 6}
           className={showNudge && habitsCount < 6 ? 'nudge-strobe' : ''}
+          data-tour-highlight="add-habit-btn"
         >
           Add Habit
         </Button>

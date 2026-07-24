@@ -67,6 +67,7 @@ function WorkspaceInner() {
           className={`px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/30${
             showNudge ? ' nudge-strobe' : ''
           }`}
+          data-tour-highlight="add-space-btn"
         >
           + Create &quot;Daily Planner&quot;
         </button>

@@ -55,7 +55,9 @@ export function OnboardingTourCard({
     >
       {/* Header strip */}
       <div className="flex items-center justify-between px-4 pt-4 pb-2">
-        <OnboardingProgress total={totalSlides} current={slideIndex} />
+        <div className="flex items-center gap-3">
+          <OnboardingProgress total={totalSlides} current={slideIndex} />
+        </div>
         <button
           onClick={onSkip}
           className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-lg hover:bg-white/5"
@@ -96,20 +98,31 @@ export function OnboardingTourCard({
       </div>
 
       {/* Footer nav */}
-      <div className="flex items-center justify-between px-4 pb-4 pt-2 border-t border-border/30 mt-1">
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={onPrev}
-          disabled={!canGoPrev}
-          className="gap-1.5 text-muted-foreground"
-          aria-label="Previous step"
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Back
-        </Button>
+      <div className="flex items-center justify-between px-4 pb-4 pt-2 border-t border-border/30 mt-1 relative">
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onPrev}
+            disabled={!canGoPrev}
+            className="gap-1 px-2 text-muted-foreground"
+            aria-label="Previous step"
+          >
+            <ChevronLeft className="h-4 w-4" />
+            Back
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={onSkip}
+            className="gap-1 px-2 text-muted-foreground hover:text-foreground transition-colors"
+            aria-label="Skip tour"
+          >
+            Skip
+          </Button>
+        </div>
 
-        <span className="text-xs text-muted-foreground">
+        <span className="text-xs text-muted-foreground absolute left-1/2 -translate-x-1/2">
           {slideIndex + 1} / {totalSlides}
         </span>
 
