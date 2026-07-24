@@ -175,4 +175,33 @@
   .custom-scrollbar::-webkit-scrollbar-thumb:hover {
     background-color: var(--color-foreground);
   }
+
+  /* ── Onboarding nudge strobe animation ───────────────────────────────────── */
+  /* Applied to Add Habit / Add Subject / Create Space buttons right after      */
+  /* onboarding completes to draw attention to the next action.                 */
+  .nudge-strobe {
+    animation: nudge-strobe 1.8s ease-in-out infinite;
+  }
+}
+
+@keyframes nudge-strobe {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 0 rgba(249, 115, 22, 0),
+      0 0 0 0 rgba(249, 115, 22, 0);
+    transform: scale(1);
+  }
+  40% {
+    box-shadow:
+      0 0 0 4px rgba(249, 115, 22, 0.35),
+      0 0 18px 6px rgba(249, 115, 22, 0.2);
+    transform: scale(1.04);
+  }
+  55% {
+    box-shadow:
+      0 0 0 6px rgba(249, 115, 22, 0.15),
+      0 0 28px 10px rgba(249, 115, 22, 0.12);
+    transform: scale(1.02);
+  }
 }

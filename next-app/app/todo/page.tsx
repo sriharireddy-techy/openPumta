@@ -6,6 +6,7 @@ import { SpaceNav } from './components/SpaceNav';
 import WorkspaceCanvas from './components/WorkspaceCanvas';
 import { SpaceSettingsMenu } from './components/SpaceSettingsMenu';
 import { useWorkspaceStore } from '@/store/useWorkspaceStore';
+import { useOnboardingStore } from '@/store/useOnboardingStore';
 import { toast } from 'sonner';
 import { LayoutDashboard } from 'lucide-react';
 
@@ -15,6 +16,10 @@ function WorkspaceInner() {
   const { activeSpaceId, setActiveSpace } = useWorkspaceStore();
   const { data: spaces, isLoading: spacesLoading } = useSpaces();
   const createSpace = useCreateSpace();
+  const { hasSeenOnboarding, onboardingChoice, hasSeenConfetti } = useOnboardingStore();
+
+  // Show strobe nudge right after onboarding, until confetti fires (all tasks done)
+  const showNudge = onboardingChoice !== null && !hasSeenConfetti;
 
   // Auto-select first space when loaded
   useEffect(() => {
@@ -54,8 +59,14 @@ function WorkspaceInner() {
           </p>
         </div>
         <button
-          onClick={() => handleCreateSpace('Daily Planner', '📋')}
-          className="px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/30"
+          onClick={() => {
+            // Block creating spaces during onboarding tour
+            if (!hasSeenOnboarding) return;
+            handleCreateSpace('Daily Planner', '📋');
+          }}
+          className={`px-5 py-2.5 rounded-xl bg-primary text-primary-foreground text-sm font-semibold hover:bg-primary/90 transition-colors shadow-lg shadow-primary/30${
+            showNudge ? ' nudge-strobe' : ''
+          }`}
         >
           + Create &quot;Daily Planner&quot;
         </button>

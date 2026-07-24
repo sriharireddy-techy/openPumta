@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { useCreateSubject, useArchivedSubjects, useRestoreSubject } from '@/hooks/useSubjects';
 import { Habit } from '@/hooks/useHabits';
 import { useAuthStore } from '@/store/useAuthStore';
+import { useOnboardingStore } from '@/store/useOnboardingStore';
 import { ColorPicker } from './ColorPicker';
 import { HabitSelector } from './HabitSelector';
 import { cn } from '@/lib/utils';
@@ -29,6 +30,10 @@ export function AddSubjectDialog({ habits, empty }: AddSubjectDialogProps) {
   const createSubject = useCreateSubject();
   const { data: archived } = useArchivedSubjects();
   const restoreSubject = useRestoreSubject();
+  const { hasSeenOnboarding, onboardingChoice, hasSeenConfetti } = useOnboardingStore();
+
+  // Show strobe nudge right after onboarding completes, until confetti fires
+  const showNudge = onboardingChoice !== null && !hasSeenConfetti;
 
   const [isOpen, setIsOpen] = useState(false);
   const [color, setColor] = useState('#f97316');
@@ -63,7 +68,7 @@ export function AddSubjectDialog({ habits, empty }: AddSubjectDialogProps) {
     createSubject.mutate(
       { name: typedName, goalWorkSecs, color, habits: selectedHabits },
       {
-        onSuccess: (data: any) => {
+        onSuccess: (data: { restored?: boolean; name?: string }) => {
           setIsOpen(false);
           if (data?.restored) {
             toast.success(`"${data.name}" restored with all past logs!`);
@@ -76,15 +81,20 @@ export function AddSubjectDialog({ habits, empty }: AddSubjectDialogProps) {
     );
   };
 
-  console.log('empty ', empty);
-
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog
+      open={isOpen}
+      onOpenChange={(open) => {
+        // Block opening during onboarding tour
+        if (open && !hasSeenOnboarding) return;
+        setIsOpen(open);
+      }}
+    >
       <DialogTrigger asChild>
         <Button
           className={cn(
             'rounded-xl bg-primary px-4 py-2 text-primary-foreground hover:bg-primary/90 font-medium',
-            empty && 'animate-pulse',
+            (empty || showNudge) && 'nudge-strobe',
           )}
         >
           + Add Subject
@@ -201,7 +211,7 @@ export function AddSubjectDialog({ habits, empty }: AddSubjectDialogProps) {
                           disabled={restoreSubject.isPending}
                           onClick={() => {
                             restoreSubject.mutate(archSubj.id, {
-                              onSuccess: (data: any) => {
+                              onSuccess: (data: { name?: string }) => {
                                 toast.success(`"${data.name}" restored!`);
                                 setIsOpen(false);
                               },

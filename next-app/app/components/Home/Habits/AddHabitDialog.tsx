@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/select';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useCreateHabit, HabitDifficulty } from '@/hooks/useHabits';
+import { useOnboardingStore } from '@/store/useOnboardingStore';
 import { toast } from 'sonner';
 import { DIFFICULTY_OPTIONS } from './constants';
 
@@ -30,6 +31,10 @@ interface AddHabitDialogProps {
 export function AddHabitDialog({ subjects, habitsCount }: AddHabitDialogProps) {
   const { user } = useAuthStore();
   const createHabit = useCreateHabit();
+  const { hasSeenOnboarding, onboardingChoice, hasSeenConfetti } = useOnboardingStore();
+
+  // Show strobe nudge right after onboarding, until first interaction
+  const showNudge = onboardingChoice !== null && !hasSeenConfetti;
 
   const [isOpen, setIsOpen] = useState(false);
   const [addName, setAddName] = useState('');
@@ -47,6 +52,8 @@ export function AddHabitDialog({ subjects, habitsCount }: AddHabitDialogProps) {
   };
 
   const handleOpenChange = (open: boolean) => {
+    // Block opening the dialog during onboarding tour
+    if (open && !hasSeenOnboarding) return;
     setIsOpen(open);
     if (!open) resetAddForm();
   };
@@ -90,7 +97,11 @@ export function AddHabitDialog({ subjects, habitsCount }: AddHabitDialogProps) {
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogTrigger asChild>
-        <Button size="sm" disabled={habitsCount >= 6}>
+        <Button
+          size="sm"
+          disabled={habitsCount >= 6}
+          className={showNudge && habitsCount < 6 ? 'nudge-strobe' : ''}
+        >
           Add Habit
         </Button>
       </DialogTrigger>

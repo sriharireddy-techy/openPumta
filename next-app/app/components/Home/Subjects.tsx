@@ -57,7 +57,6 @@ function Subjects() {
   });
   const totalTrackedFormatted = `${pad(totalH)}:${pad(totalM)}:${pad(totalS)}`;
 
-  console.log('empty ', Subjects.length === 0);
   return (
     <section
       className="flex flex-col h-full rounded-xl bg-background p-4"
