@@ -369,7 +369,9 @@ function OpenSourceIllustration() {
             </div>
           ))}
         </div>
-        <div className="text-[10px] text-white/40 text-center">github.com/your-org/openpumta</div>
+        <div className="text-[10px] text-white/40 text-center">
+          github.com/ShouryaUpadhyaya/openPumta
+        </div>
       </div>
     </motion.div>
   );

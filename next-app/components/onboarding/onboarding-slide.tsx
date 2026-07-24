@@ -61,7 +61,7 @@ export function OnboardingSlidePanel({ slide, direction, slideKey }: OnboardingS
             <p className="text-base text-muted-foreground leading-relaxed">{slide.subtitle}</p>
           )}
 
-          <ul className="space-y-2">
+          <ul className="space-y-2 list-none">
             {slide.body.map((line, i) => (
               <motion.li
                 key={i}

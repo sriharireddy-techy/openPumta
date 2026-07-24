@@ -80,8 +80,9 @@ export function GettingStartedCard() {
     return () => clearTimeout(timer);
   }, [allDone, hasSeenConfetti, markConfettiSeen, dismissGettingStarted]);
 
-  // Show for any completed onboarding (fresh or demo) who haven't dismissed
-  const shouldShow = onboardingChoice !== null && !gettingStartedDismissed && !allDone;
+  // Show for any completed onboarding who haven't dismissed
+  // (show during tasks AND when all done, until dismissed)
+  const shouldRender = onboardingChoice !== null && !gettingStartedDismissed;
 
   const completedCount = gettingStartedTasks.filter((t) => t.completed).length;
 
@@ -89,13 +90,13 @@ export function GettingStartedCard() {
 
   return (
     <AnimatePresence>
-      {(shouldShow || (allDone && onboardingChoice !== null)) && !gettingStartedDismissed && (
+      {shouldRender && (
         <motion.div
           initial={{ x: 120, opacity: 0 }}
           animate={{ x: 0, opacity: 1 }}
           exit={{ x: 120, opacity: 0 }}
           transition={{ type: 'spring', stiffness: 360, damping: 32 }}
-          className="fixed lg:bottom-6 lg:right-6 z-40 w-75 max-w-[calc(100vw-2rem)] bg-card border border-border/40 rounded-2xl shadow-2xl shadow-black/30 overflow-hidden"
+          className="fixed bottom-24 right-4 lg:bottom-6 lg:right-6 z-40 w-75 max-w-[calc(100vw-2rem)] bg-card border border-border/40 rounded-2xl shadow-2xl shadow-black/30 overflow-hidden"
           role="complementary"
           aria-label="Getting started checklist"
         >

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Sparkles, Play, Loader2, CheckCircle } from 'lucide-react';
+import { Sparkles, Play, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useOnboardingStore } from '@/store/useOnboardingStore';
 import { removeDemoData } from './demo-data-generator';
@@ -25,17 +25,21 @@ export function OnboardingCompletion({ onClose }: OnboardingCompletionProps) {
       }
       markOnboardingComplete('fresh');
       onClose();
-      // Clear React Query persisted cache
-      window.localStorage.removeItem('REACT_QUERY_OFFLINE_CACHE');
-      // Reload to invalidate all caches and reset state
+      try {
+        window.localStorage.removeItem('REACT_QUERY_OFFLINE_CACHE');
+      } catch (_e) {
+        /* storage unavailable */
+      }
       window.location.href = '/';
     } catch {
       markOnboardingComplete('fresh');
       onClose();
-      window.localStorage.removeItem('REACT_QUERY_OFFLINE_CACHE');
+      try {
+        window.localStorage.removeItem('REACT_QUERY_OFFLINE_CACHE');
+      } catch (_e) {
+        /* storage unavailable */
+      }
       window.location.href = '/';
-    } finally {
-      setLoadingFresh(false);
     }
   };
 
@@ -46,18 +50,24 @@ export function OnboardingCompletion({ onClose }: OnboardingCompletionProps) {
         await removeDemoData(demoDataIds, true);
         setDemoDataIds(null);
       }
-      // Clear React Query persisted cache
-      window.localStorage.removeItem('REACT_QUERY_OFFLINE_CACHE');
+      try {
+        window.localStorage.removeItem('REACT_QUERY_OFFLINE_CACHE');
+      } catch (_e) {
+        /* storage unavailable */
+      }
       // Brief pause to show success state before closing
-      setTimeout(() => {
-        markOnboardingComplete('demo');
-        onClose();
-        window.location.href = '/';
-      }, 600);
+      await new Promise((resolve) => setTimeout(resolve, 600));
+      markOnboardingComplete('demo');
+      onClose();
+      window.location.href = '/';
     } catch {
       markOnboardingComplete('demo');
       onClose();
-      window.localStorage.removeItem('REACT_QUERY_OFFLINE_CACHE');
+      try {
+        window.localStorage.removeItem('REACT_QUERY_OFFLINE_CACHE');
+      } catch (_e) {
+        /* storage unavailable */
+      }
       window.location.href = '/';
     } finally {
       setLoadingTemplate(false);

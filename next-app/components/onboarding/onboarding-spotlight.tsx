@@ -33,6 +33,11 @@ export function OnboardingSpotlight({ targetId, visible, padding = 10 }: Onboard
     });
   }, [targetId, padding]);
 
+  // Reset rect immediately when target changes to avoid stale highlight
+  useEffect(() => {
+    setRect(null);
+  }, [targetId]);
+
   // Handle initial focus and scrolling when target changes
   useEffect(() => {
     if (!visible || !targetId) return;
@@ -86,9 +91,9 @@ export function OnboardingSpotlight({ targetId, visible, padding = 10 }: Onboard
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 pointer-events-none z-40"
+            className="fixed pointer-events-none z-40"
             style={{
-              background: `rgba(0,0,0,0)`,
+              background: 'transparent',
               // Use box-shadow trick: clip everything except the rect hole
               boxShadow: `0 0 0 9999px rgba(0, 0, 0, 0.65)`,
               top: rect.top,

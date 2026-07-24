@@ -97,7 +97,11 @@ export function OnboardingModal() {
   const handleSkip = useCallback(() => {
     cleanupDemoData();
     markOnboardingComplete('fresh');
-    window.localStorage.removeItem('REACT_QUERY_OFFLINE_CACHE');
+    try {
+      window.localStorage.removeItem('REACT_QUERY_OFFLINE_CACHE');
+    } catch (_e) {
+      /* storage unavailable */
+    }
     queryClient.clear();
     window.location.href = '/';
   }, [markOnboardingComplete, cleanupDemoData]);
@@ -214,7 +218,11 @@ export function OnboardingModal() {
                 {/* Body */}
                 <div className="flex-1 overflow-y-auto px-6 py-4 min-h-0">
                   {showCompletion ? (
-                    <OnboardingCompletion onClose={() => {}} />
+                    <OnboardingCompletion
+                      onClose={() => {
+                        setShowCompletion(false);
+                      }}
+                    />
                   ) : (
                     <OnboardingSlidePanel
                       slide={currentSlide}
