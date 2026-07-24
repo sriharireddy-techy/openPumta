@@ -48,7 +48,7 @@ export const ONBOARDING_SLIDES: OnboardingSlide[] = [
     illustration: 'subjects',
     cta: 'Continue',
     route: '/',
-    highlightTarget: 'add-subject-btn',
+    highlightTarget: 'subjects-section',
     tourLabel: 'Hit Continue to keep going. You can add subjects after the tour.',
   },
   {
@@ -63,7 +63,7 @@ export const ONBOARDING_SLIDES: OnboardingSlide[] = [
     illustration: 'habits',
     cta: 'Continue',
     route: '/',
-    highlightTarget: 'add-habit-btn',
+    highlightTarget: 'habits-section',
     tourLabel: 'Hit Continue when you are ready to add your first habit.',
   },
   {
@@ -77,7 +77,7 @@ export const ONBOARDING_SLIDES: OnboardingSlide[] = [
     illustration: 'workspace',
     cta: 'Continue',
     route: '/todo',
-    highlightTarget: 'add-space-btn',
+    highlightTarget: 'workspace-page',
     tourLabel: 'Hit Continue when you are ready to create a space.',
   },
   {
