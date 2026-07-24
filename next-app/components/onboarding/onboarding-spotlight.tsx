@@ -117,7 +117,7 @@ export function OnboardingSpotlight({ targetId, visible, padding = 10 }: Onboard
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="fixed pointer-events-none z-[98]"
+            className="fixed pointer-events-none z-[9998]"
             style={{
               top: rect.top,
               left: rect.left,
@@ -134,7 +134,7 @@ export function OnboardingSpotlight({ targetId, visible, padding = 10 }: Onboard
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3, delay: 0.05 }}
-            className="fixed pointer-events-none z-[98]"
+            className="fixed pointer-events-none z-[9998]"
             style={{
               top: rect.top,
               left: rect.left,

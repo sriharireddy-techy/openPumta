@@ -12,10 +12,12 @@ import {
   CheckCircle,
   Settings,
   Menu,
+  Lock,
 } from 'lucide-react';
 import { useEffect } from 'react';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useLayoutStore } from '@/store/useLayoutStore';
+import { useOnboardingStore } from '@/store/useOnboardingStore';
 import Image from 'next/image';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { LogOut } from 'lucide-react';
@@ -29,10 +31,59 @@ const navItems = [
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
+type NavItem = (typeof navItems)[0];
+
+// ── Locked nav item shown during onboarding ────────────────────────────────
+function LockedNavItem({
+  item,
+  collapsed,
+  pathname,
+}: {
+  item: NavItem;
+  collapsed: boolean;
+  pathname: string;
+}) {
+  const isActive = pathname === item.href;
+  const el = (
+    <div
+      className={cn(
+        'flex items-center rounded-lg w-full opacity-40 cursor-not-allowed select-none',
+        collapsed ? 'justify-center p-3' : 'gap-3 px-3 py-3',
+        isActive ? 'bg-primary text-primary-foreground' : 'text-muted-foreground',
+      )}
+      title="Navigation is locked during onboarding"
+    >
+      <item.icon className="h-5 w-5 shrink-0" />
+      {!collapsed && (
+        <span className="font-medium text-sm whitespace-nowrap overflow-hidden flex-1">
+          {item.label}
+        </span>
+      )}
+      {!collapsed && <Lock className="h-3 w-3 shrink-0 opacity-60" />}
+    </div>
+  );
+
+  if (collapsed) {
+    return (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className="w-full">{el}</div>
+        </TooltipTrigger>
+        <TooltipContent side="right">Navigation locked during onboarding</TooltipContent>
+      </Tooltip>
+    );
+  }
+  return el;
+}
+
 export default function Navigation({ mounted }: { mounted: boolean }) {
   const pathname = usePathname();
   const { isSidebarCollapsed, toggleSidebar } = useLayoutStore();
   const { user, fetchUser, loading, logout } = useAuthStore();
+  const { hasSeenOnboarding } = useOnboardingStore();
+
+  // Nav is locked while onboarding is in progress
+  const navLocked = !hasSeenOnboarding;
 
   useEffect(() => {
     fetchUser();
@@ -51,6 +102,18 @@ export default function Navigation({ mounted }: { mounted: boolean }) {
         <nav className="flex items-center justify-around p-2">
           {navItems.map((item) => {
             const isActive = pathname === item.href;
+            if (navLocked) {
+              return (
+                <div
+                  key={item.href}
+                  className={`flex flex-col items-center gap-1 p-2 rounded-xl opacity-40 cursor-not-allowed select-none ${isActive ? 'text-primary bg-primary/10' : 'text-muted-foreground'}`}
+                  title="Navigation locked during onboarding"
+                >
+                  <item.icon className="h-5 w-5" />
+                  <span className="text-[10px]">{item.label}</span>
+                </div>
+              );
+            }
             return (
               <Link key={item.href} href={item.href}>
                 <div
@@ -94,6 +157,18 @@ export default function Navigation({ mounted }: { mounted: boolean }) {
           <nav className="flex flex-1 flex-col space-y-2">
             {navItems.map((item) => {
               const isActive = pathname === item.href;
+
+              if (navLocked) {
+                return (
+                  <LockedNavItem
+                    key={item.href}
+                    item={item}
+                    collapsed={isSidebarCollapsed}
+                    pathname={pathname}
+                  />
+                );
+              }
+
               const navLink = (
                 <Link key={item.href} href={item.href} className="w-full">
                   <div

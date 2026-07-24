@@ -75,6 +75,31 @@ export function OnboardingModal() {
     }
   }, [slideIndex, mounted, hasSeenOnboarding, isTourMode, currentSlide?.route, router]);
 
+  // ── Block all anchor clicks during onboarding to prevent accidental nav ────
+  useEffect(() => {
+    if (hasSeenOnboarding || !mounted) return;
+
+    const blockLinks = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      // Walk up the DOM to find the nearest anchor
+      const anchor = target.closest('a');
+      if (!anchor) return;
+      // Allow clicks inside the onboarding tour card / modal (they're inside a portal)
+      const onboardingRoots = document.querySelectorAll(
+        '[role="dialog"], [aria-label="Getting started checklist"]',
+      );
+      for (const root of onboardingRoots) {
+        if (root.contains(target)) return;
+      }
+      // Block all other navigation links while onboarding is active
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    document.addEventListener('click', blockLinks, true);
+    return () => document.removeEventListener('click', blockLinks, true);
+  }, [hasSeenOnboarding, mounted]);
+
   // ── Focus trap ────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!mounted || hasSeenOnboarding) return;
@@ -99,6 +124,7 @@ export function OnboardingModal() {
     markOnboardingComplete('fresh');
     try {
       window.localStorage.removeItem('REACT_QUERY_OFFLINE_CACHE');
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
     } catch (_e) {
       /* storage unavailable */
     }
