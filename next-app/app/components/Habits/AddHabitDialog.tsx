@@ -12,13 +12,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { cn } from '@/lib/utils';
 import { Plus, RotateCcw } from 'lucide-react';
 import { toast } from 'sonner';
 import { DIFFICULTY_OPTIONS } from './constants';
@@ -34,7 +29,7 @@ export function AddHabitDialog({
   const { user } = useAuthStore();
   const [open, setOpen] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
-  const [selectedSubject, setSelectedSubject] = useState<string>('none');
+  const [selectedSubjectIds, setSelectedSubjectIds] = useState<number[]>([]);
   const [selectedDifficulty, setSelectedDifficulty] = useState<HabitDifficulty>('MID');
   const [addAutoCompleteMins, setAddAutoCompleteMins] = useState<string>('2');
   const [addBadDayPlan, setAddBadDayPlan] = useState('');
@@ -42,7 +37,11 @@ export function AddHabitDialog({
   const createHabit = useCreateHabit();
   const { data: archived } = useArchivedHabits();
 
-  // Check if the typed name matches an archived habit (case-insensitive)
+  const activeSubjects = useMemo(
+    () => subjects?.filter((s) => !s.deleted && !s.isDeleted) ?? [],
+    [subjects],
+  );
+
   const matchedArchived = useMemo(() => {
     if (!newTaskTitle.trim() || !archived?.length) return null;
     return archived.find((h) => h.name.toLowerCase() === newTaskTitle.trim().toLowerCase()) ?? null;
@@ -50,10 +49,16 @@ export function AddHabitDialog({
 
   const resetAddForm = () => {
     setNewTaskTitle('');
-    setSelectedSubject('none');
+    setSelectedSubjectIds([]);
     setSelectedDifficulty('MID');
     setAddAutoCompleteMins('2');
     setAddBadDayPlan('');
+  };
+
+  const toggleSubject = (id: number) => {
+    setSelectedSubjectIds((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
+    );
   };
 
   const handleAddHabit = (e: React.FormEvent) => {
@@ -69,14 +74,15 @@ export function AddHabitDialog({
       {
         name: newTaskTitle.trim(),
         difficulty: selectedDifficulty,
-        subjectId: selectedSubject !== 'none' ? parseInt(selectedSubject) : undefined,
+        subjectIds: selectedSubjectIds.length > 0 ? selectedSubjectIds : undefined,
         badDayPlan: addBadDayPlan.trim() || undefined,
         autoCompleteTime:
-          selectedSubject !== 'none' && addAutoCompleteMins
+          selectedSubjectIds.length > 0 && addAutoCompleteMins
             ? Math.max(1, parseInt(addAutoCompleteMins)) * 60
             : null,
       },
       {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         onSuccess: (data: any) => {
           resetAddForm();
           setOpen(false);
@@ -116,7 +122,7 @@ export function AddHabitDialog({
           </p>
         </DialogHeader>
         <form onSubmit={handleAddHabit} className="flex flex-col">
-          <div className="p-6 pt-4 space-y-5">
+          <div className="p-6 pt-4 space-y-5 max-h-[70vh] overflow-y-auto">
             <div className="flex flex-col gap-2">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Habit Name
@@ -168,32 +174,50 @@ export function AddHabitDialog({
 
             <div className="flex flex-col gap-2">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Linked Subject
+                Linked Subjects
                 <span className="ml-1 normal-case font-normal text-muted-foreground/60">
-                  (optional)
+                  (optional, select multiple)
                 </span>
               </Label>
-              <Select value={selectedSubject} onValueChange={setSelectedSubject}>
-                <SelectTrigger className="bg-muted/30 border-muted-foreground/20">
-                  <SelectValue placeholder="No subject" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No Subject</SelectItem>
-                  {subjects?.map((s) => (
-                    <SelectItem key={s.id} value={s.id.toString()}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {activeSubjects.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No active subjects available.</p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {activeSubjects.map((s) => {
+                    const isChecked = selectedSubjectIds.includes(s.id);
+                    return (
+                      <label
+                        key={s.id}
+                        className={cn(
+                          'flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors',
+                          isChecked
+                            ? 'border-primary bg-primary/10'
+                            : 'bg-muted/10 hover:bg-muted/30 border-muted-foreground/10',
+                        )}
+                      >
+                        <Checkbox checked={isChecked} onCheckedChange={() => toggleSubject(s.id)} />
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ backgroundColor: s.color || '#f97316' }}
+                          />
+                          <span className="text-sm font-medium leading-none truncate">
+                            {s.name}
+                          </span>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
-            {selectedSubject !== 'none' && (
+            {selectedSubjectIds.length > 0 && (
               <div className="flex flex-col gap-2">
                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Auto-Complete Time
                   <span className="ml-1 normal-case font-normal text-muted-foreground/60">
-                    (minutes)
+                    (minutes — applies to all linked subjects)
                   </span>
                 </Label>
                 <Input
@@ -209,7 +233,7 @@ export function AddHabitDialog({
 
             <div className="bg-primary/10 border border-primary/20 rounded-lg p-3 text-xs text-primary/90 mt-2 leading-relaxed">
               <strong>Pro Tip:</strong>
-              {`On days when you have zero energy, complete a minimum
+              {` On days when you have zero energy, complete a minimum
               baseline (e.g., "Do 1 pushup") to keep your streak alive. The goal is to never
               throw up a zero.`}
             </div>

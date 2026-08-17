@@ -73,6 +73,7 @@ export default function HabitsPage() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [editingHabit, setEditingHabit] = useState<any>(null);
+  const [isEditOpen, setIsEditOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
 
   const fromDateString = useMemo(() => {
@@ -286,7 +287,9 @@ export default function HabitsPage() {
               completionDates.set(getLocalIsoDate(new Date()), todayLog?.isBadDayPlan || false);
             }
 
-            const linkedSubject = subjects?.find((s) => s.id === habit.subjectId);
+            const linkedSubject = habit.subjects?.[0]
+              ? subjects?.find((s) => s.id === habit.subjects[0].id)
+              : undefined;
 
             const isCompletedMinimum = isCompletedToday
               ? !!todayStats.find((l: HabitLog) => l.habitId === habit.id)?.isBadDayPlan
@@ -304,7 +307,10 @@ export default function HabitsPage() {
                 gridCols={gridCols}
                 filterRange={filterRange}
                 selectedDateStr={selectedDateStr}
-                onEdit={setEditingHabit}
+                onEdit={(h) => {
+                  setEditingHabit(h);
+                  setIsEditOpen(true);
+                }}
                 onDelete={(id) => deleteHabit.mutate(id)}
                 onToggle={(id, isBadDayPlan) =>
                   toggleHabit.mutate({ habitId: id, isBadDayPlan, date: selectedDateStr })
@@ -316,8 +322,12 @@ export default function HabitsPage() {
       </div>
 
       <EditHabitDialog
-        editingHabit={editingHabit}
-        setEditingHabit={setEditingHabit}
+        habit={editingHabit}
+        isOpen={isEditOpen}
+        onOpenChange={(open) => {
+          setIsEditOpen(open);
+          if (!open) setEditingHabit(null);
+        }}
         subjects={subjects}
       />
 

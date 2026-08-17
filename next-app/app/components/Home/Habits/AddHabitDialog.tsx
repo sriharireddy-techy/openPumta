@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -10,13 +10,8 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/useAuthStore';
 import { useCreateHabit, HabitDifficulty } from '@/hooks/useHabits';
 import { useOnboardingStore } from '@/store/useOnboardingStore';
@@ -24,7 +19,7 @@ import { toast } from 'sonner';
 import { DIFFICULTY_OPTIONS } from './constants';
 
 interface AddHabitDialogProps {
-  subjects?: { id: number; name: string }[];
+  subjects?: { id: number; name: string; color?: string; deleted?: boolean }[];
   habitsCount: number;
 }
 
@@ -33,29 +28,35 @@ export function AddHabitDialog({ subjects, habitsCount }: AddHabitDialogProps) {
   const createHabit = useCreateHabit();
   const { hasSeenOnboarding, onboardingChoice, hasSeenConfetti } = useOnboardingStore();
 
-  // Show strobe nudge right after onboarding, until first interaction
   const showNudge = onboardingChoice !== null && !hasSeenConfetti;
 
   const [isOpen, setIsOpen] = useState(false);
   const [addName, setAddName] = useState('');
   const [addDifficulty, setAddDifficulty] = useState<HabitDifficulty>('MID');
-  const [addSubject, setAddSubject] = useState<string>('none');
+  const [selectedSubjectIds, setSelectedSubjectIds] = useState<number[]>([]);
   const [addAutoCompleteMins, setAddAutoCompleteMins] = useState<string>('2');
   const [addBadDayPlan, setAddBadDayPlan] = useState('');
+
+  const activeSubjects = useMemo(() => subjects?.filter((s) => !s.deleted) ?? [], [subjects]);
 
   const resetAddForm = () => {
     setAddName('');
     setAddDifficulty('MID');
-    setAddSubject('none');
+    setSelectedSubjectIds([]);
     setAddAutoCompleteMins('2');
     setAddBadDayPlan('');
   };
 
   const handleOpenChange = (open: boolean) => {
-    // Block opening the dialog during onboarding tour
     if (open && !hasSeenOnboarding) return;
     setIsOpen(open);
     if (!open) resetAddForm();
+  };
+
+  const toggleSubject = (id: number) => {
+    setSelectedSubjectIds((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
+    );
   };
 
   const handleAddHabit = (e: React.FormEvent) => {
@@ -71,10 +72,10 @@ export function AddHabitDialog({ subjects, habitsCount }: AddHabitDialogProps) {
       {
         name: addName.trim(),
         difficulty: addDifficulty,
-        subjectId: addSubject !== 'none' ? parseInt(addSubject) : undefined,
+        subjectIds: selectedSubjectIds.length > 0 ? selectedSubjectIds : undefined,
         badDayPlan: addBadDayPlan.trim() || undefined,
         autoCompleteTime:
-          addSubject !== 'none' && addAutoCompleteMins
+          selectedSubjectIds.length > 0 && addAutoCompleteMins
             ? Math.max(1, parseInt(addAutoCompleteMins)) * 60
             : null,
       },
@@ -147,24 +148,43 @@ export function AddHabitDialog({ subjects, habitsCount }: AddHabitDialogProps) {
 
           <div className="flex flex-col gap-2">
             <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Linked Subject
+              Linked Subjects
+              <span className="ml-1 normal-case font-normal text-muted-foreground/60">
+                (optional)
+              </span>
             </Label>
-            <Select value={addSubject} onValueChange={setAddSubject}>
-              <SelectTrigger>
-                <SelectValue placeholder="Link to subject (optional)" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">No Subject</SelectItem>
-                {subjects?.map((s) => (
-                  <SelectItem key={s.id} value={s.id.toString()}>
-                    {s.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            {activeSubjects.length === 0 ? (
+              <p className="text-xs text-muted-foreground">No active subjects available.</p>
+            ) : (
+              <div className="grid grid-cols-1 gap-2 max-h-36 overflow-y-auto">
+                {activeSubjects.map((s) => {
+                  const isChecked = selectedSubjectIds.includes(s.id);
+                  return (
+                    <label
+                      key={s.id}
+                      className={cn(
+                        'flex items-center gap-3 p-2.5 rounded-lg border cursor-pointer transition-colors',
+                        isChecked
+                          ? 'border-primary bg-primary/10'
+                          : 'bg-muted/10 hover:bg-muted/30 border-muted-foreground/10',
+                      )}
+                    >
+                      <Checkbox checked={isChecked} onCheckedChange={() => toggleSubject(s.id)} />
+                      <div className="flex items-center gap-1.5 min-w-0">
+                        <span
+                          className="w-2 h-2 rounded-full shrink-0"
+                          style={{ backgroundColor: s.color || '#f97316' }}
+                        />
+                        <span className="text-sm font-medium leading-none truncate">{s.name}</span>
+                      </div>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
-          {addSubject !== 'none' && (
+          {selectedSubjectIds.length > 0 && (
             <div className="flex flex-col gap-2">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Auto-Complete Time (mins)

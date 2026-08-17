@@ -21,19 +21,22 @@ vi.mock('@/store/useLayoutStore', () => ({
 
 vi.mock('@/store/useAuthStore');
 
-// Mock Lucide icons
-vi.mock('lucide-react', () => ({
-  Home: () => <div data-testid="icon-home" />,
-  BarChart: () => <div data-testid="icon-barchart" />,
-  Timer: () => <div data-testid="icon-timer" />,
-  ListChecks: () => <div data-testid="icon-listchecks" />,
-  User: () => <div data-testid="icon-user" />,
-  LogIn: () => <div data-testid="icon-login" />,
-  CheckCircle: () => <div data-testid="icon-checkcircle" />,
-  Settings: () => <div data-testid="icon-settings" />,
-  Menu: () => <div data-testid="icon-menu" />,
-  LogOut: () => <div data-testid="icon-logout" />,
-}));
+vi.mock('lucide-react', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('lucide-react')>();
+  return {
+    ...actual,
+    Home: () => <div data-testid="icon-home" />,
+    BarChart: () => <div data-testid="icon-barchart" />,
+    Timer: () => <div data-testid="icon-timer" />,
+    ListChecks: () => <div data-testid="icon-listchecks" />,
+    User: () => <div data-testid="icon-user" />,
+    LogIn: () => <div data-testid="icon-login" />,
+    CheckCircle: () => <div data-testid="icon-checkcircle" />,
+    Settings: () => <div data-testid="icon-settings" />,
+    Menu: () => <div data-testid="icon-menu" />,
+    LogOut: () => <div data-testid="icon-logout" />,
+  };
+});
 
 describe('Navigation nudges', () => {
   beforeEach(() => {
@@ -66,7 +69,7 @@ describe('Navigation nudges', () => {
       logout: vi.fn(),
     } as any);
 
-    const { container } = render(<Navigation mounted={true} />);
+    render(<Navigation mounted={true} />);
 
     // Should render Sign Up Now instead of Logout
     const signUpElements = screen.getAllByText('Sign Up Now');

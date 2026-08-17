@@ -1,6 +1,6 @@
 /* eslint-disable react-hooks/set-state-in-effect */
-import React, { useEffect, useState } from 'react';
-import { useUpdateHabit, HabitDifficulty } from '@/hooks/useHabits';
+import React, { useEffect, useState, useMemo } from 'react';
+import { useUpdateHabit, HabitDifficulty, Habit } from '@/hooks/useHabits';
 import {
   Dialog,
   DialogContent,
@@ -11,67 +11,73 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { DIFFICULTY_OPTIONS } from './constants';
 
 export function EditHabitDialog({
-  editingHabit,
-  setEditingHabit,
+  habit,
+  isOpen,
+  onOpenChange,
   subjects,
 }: {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  editingHabit: any;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  setEditingHabit: (habit: any) => void;
+  habit: Habit | null;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   subjects: any[] | undefined;
 }) {
   const [editName, setEditName] = useState('');
-  const [editSubject, setEditSubject] = useState<string>('none');
+  const [selectedSubjectIds, setSelectedSubjectIds] = useState<number[]>([]);
   const [editDifficulty, setEditDifficulty] = useState<HabitDifficulty>('MID');
   const [editAutoCompleteMins, setEditAutoCompleteMins] = useState<string>('');
   const [editBadDayPlan, setEditBadDayPlan] = useState('');
 
   const updateHabit = useUpdateHabit();
 
+  const activeSubjects = useMemo(
+    () => subjects?.filter((s) => !s.deleted && !s.isDeleted) ?? [],
+    [subjects],
+  );
+
   useEffect(() => {
-    if (editingHabit) {
-      setEditName(editingHabit.name);
-      setEditSubject(editingHabit.subjectId ? String(editingHabit.subjectId) : 'none');
-      setEditDifficulty(editingHabit.difficulty || 'MID');
+    if (habit && isOpen) {
+      setEditName(habit.name);
+      setSelectedSubjectIds(habit.subjects?.map((s) => s.id) ?? []);
+      setEditDifficulty(habit.difficulty || 'MID');
       setEditAutoCompleteMins(
-        editingHabit.autoCompleteTime ? String(Math.floor(editingHabit.autoCompleteTime / 60)) : '',
+        habit.autoCompleteTime ? String(Math.floor(habit.autoCompleteTime / 60)) : '',
       );
-      setEditBadDayPlan(editingHabit.badDayPlan || '');
+      setEditBadDayPlan(habit.badDayPlan || '');
     }
-  }, [editingHabit]);
+  }, [habit, isOpen]);
+
+  const toggleSubject = (id: number) => {
+    setSelectedSubjectIds((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id],
+    );
+  };
 
   const handleEditSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingHabit || !editName.trim()) return;
+    if (!habit || !editName.trim()) return;
 
     updateHabit.mutate(
       {
-        id: editingHabit.id,
+        id: habit.id,
         name: editName.trim(),
         difficulty: editDifficulty,
-        subjectId: editSubject !== 'none' ? parseInt(editSubject) : null,
+        subjectIds: selectedSubjectIds,
         badDayPlan: editBadDayPlan.trim() || null,
         autoCompleteTime:
-          editSubject !== 'none' && editAutoCompleteMins
+          selectedSubjectIds.length > 0 && editAutoCompleteMins
             ? Math.max(1, parseInt(editAutoCompleteMins)) * 60
             : null,
       },
       {
         onSuccess: () => {
-          setEditingHabit(null);
+          onOpenChange(false);
           toast.success('Habit updated');
         },
         onError: () => toast.error('Failed to update habit'),
@@ -80,18 +86,13 @@ export function EditHabitDialog({
   };
 
   return (
-    <Dialog
-      open={!!editingHabit}
-      onOpenChange={(val) => {
-        if (!val) setEditingHabit(null);
-      }}
-    >
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md rounded-2xl p-0 gap-0 overflow-hidden border-none shadow-2xl">
         <DialogHeader className="p-6 pb-4 bg-muted/20">
           <DialogTitle className="text-xl font-bold tracking-tight">Edit Habit</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleEditSubmit} className="flex flex-col">
-          <div className="p-6 pt-4 space-y-5">
+          <div className="p-6 pt-4 space-y-5 max-h-[70vh] overflow-y-auto">
             <div className="flex flex-col gap-2">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                 Habit Name
@@ -131,32 +132,50 @@ export function EditHabitDialog({
 
             <div className="flex flex-col gap-2">
               <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                Linked Subject
+                Linked Subjects
                 <span className="ml-1 normal-case font-normal text-muted-foreground/60">
-                  (optional)
+                  (optional, select multiple)
                 </span>
               </Label>
-              <Select value={editSubject} onValueChange={setEditSubject}>
-                <SelectTrigger className="bg-muted/30 border-muted-foreground/20">
-                  <SelectValue placeholder="Link to subject" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none">No Subject</SelectItem>
-                  {subjects?.map((s) => (
-                    <SelectItem key={s.id} value={s.id.toString()}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {activeSubjects.length === 0 ? (
+                <p className="text-xs text-muted-foreground">No active subjects available.</p>
+              ) : (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  {activeSubjects.map((s) => {
+                    const isChecked = selectedSubjectIds.includes(s.id);
+                    return (
+                      <label
+                        key={s.id}
+                        className={cn(
+                          'flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors',
+                          isChecked
+                            ? 'border-primary bg-primary/10'
+                            : 'bg-muted/10 hover:bg-muted/30 border-muted-foreground/10',
+                        )}
+                      >
+                        <Checkbox checked={isChecked} onCheckedChange={() => toggleSubject(s.id)} />
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span
+                            className="w-2 h-2 rounded-full shrink-0"
+                            style={{ backgroundColor: s.color || '#f97316' }}
+                          />
+                          <span className="text-sm font-medium leading-none truncate">
+                            {s.name}
+                          </span>
+                        </div>
+                      </label>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
-            {editSubject !== 'none' && (
+            {selectedSubjectIds.length > 0 && (
               <div className="flex flex-col gap-2">
                 <Label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Auto-Complete Time
                   <span className="ml-1 normal-case font-normal text-muted-foreground/60">
-                    (minutes)
+                    (minutes — applies to all linked subjects)
                   </span>
                 </Label>
                 <Input
@@ -197,7 +216,7 @@ export function EditHabitDialog({
             <Button
               type="button"
               variant="ghost"
-              onClick={() => setEditingHabit(null)}
+              onClick={() => onOpenChange(false)}
               className="rounded-xl flex-1"
             >
               Cancel

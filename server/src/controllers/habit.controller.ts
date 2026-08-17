@@ -29,7 +29,7 @@ const getAllHabits = asyncHandler(async (req: Request, res: Response) => {
         : {}),
     },
     include: {
-      subject: true,
+      subjects: true,
     },
   });
 
@@ -37,7 +37,7 @@ const getAllHabits = asyncHandler(async (req: Request, res: Response) => {
 });
 
 const createHabit = asyncHandler(async (req: Request, res: Response) => {
-  const { name, description, difficulty, subjectId, autoCompleteTime, badDayPlan } = req.body;
+  const { name, description, difficulty, subjectIds, autoCompleteTime, badDayPlan } = req.body;
   const userId = req.user?.id;
 
   if (!userId || !name) {
@@ -55,6 +55,10 @@ const createHabit = asyncHandler(async (req: Request, res: Response) => {
     );
   }
 
+  const parsedSubjectIds: number[] = Array.isArray(subjectIds)
+    ? subjectIds.map(Number).filter(Boolean)
+    : [];
+
   // Check if a soft-deleted habit with the same name exists — restore it instead
   const existing = await prisma.habit.findFirst({
     where: {
@@ -62,6 +66,7 @@ const createHabit = asyncHandler(async (req: Request, res: Response) => {
       name: { equals: name.trim(), mode: 'insensitive' },
       deleted: true,
     },
+    include: { subjects: true },
   });
 
   if (existing) {
@@ -74,12 +79,16 @@ const createHabit = asyncHandler(async (req: Request, res: Response) => {
         description: description || existing.description,
         difficulty: difficulty || existing.difficulty,
         badDayPlan: badDayPlan !== undefined ? badDayPlan || null : existing.badDayPlan,
-        subjectId: subjectId ? parseInt(subjectId) : existing.subjectId,
+        subjects:
+          parsedSubjectIds.length > 0
+            ? { set: parsedSubjectIds.map((id) => ({ id })) }
+            : { set: existing.subjects.map((s) => ({ id: s.id })) },
         autoCompleteTime:
           autoCompleteTime !== undefined && autoCompleteTime !== null
             ? Number(autoCompleteTime)
             : existing.autoCompleteTime,
       },
+      include: { subjects: true },
     });
     return res
       .status(200)
@@ -99,12 +108,16 @@ const createHabit = asyncHandler(async (req: Request, res: Response) => {
       description: description || '',
       difficulty: difficulty || 'MID',
       badDayPlan: badDayPlan || null,
-      subjectId: subjectId ? parseInt(subjectId) : null,
+      subjects:
+        parsedSubjectIds.length > 0
+          ? { connect: parsedSubjectIds.map((id) => ({ id })) }
+          : undefined,
       autoCompleteTime:
         autoCompleteTime !== undefined && autoCompleteTime !== null
           ? Number(autoCompleteTime)
           : null,
     },
+    include: { subjects: true },
   });
 
   res.status(200).json(new ApiResponse(200, habit, 'Habit created successfully'));
@@ -112,12 +125,11 @@ const createHabit = asyncHandler(async (req: Request, res: Response) => {
 
 const updateHabit = asyncHandler(async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { name, description, difficulty, subjectId, deleted, autoCompleteTime, badDayPlan } =
+  const { name, description, difficulty, subjectIds, deleted, autoCompleteTime, badDayPlan } =
     req.body;
   const idNum = Number(id);
   const userId = req.user?.id;
 
-  // Verify ownership
   const existingHabit = await prisma.habit.findFirst({
     where: { id: idNum, userId: Number(userId), deleted: false },
   });
@@ -126,15 +138,11 @@ const updateHabit = asyncHandler(async (req: Request, res: Response) => {
     throw new ApiError(404, 'Habit not found');
   }
 
-  // subjectId may arrive as a number, stringified number, or null
-  const resolvedSubjectId =
-    subjectId === null || subjectId === 'null' || subjectId === ''
-      ? null
-      : subjectId !== undefined
-        ? Number(subjectId)
-        : undefined;
+  const resolvedSubjects =
+    subjectIds !== undefined && Array.isArray(subjectIds)
+      ? { set: (subjectIds as number[]).map((sid) => ({ id: Number(sid) })) }
+      : undefined;
 
-  // autoCompleteTime: null clears it, number sets it, undefined leaves it unchanged
   const resolvedAutoCompleteTime =
     autoCompleteTime === null || autoCompleteTime === 'null' || autoCompleteTime === ''
       ? null
@@ -151,10 +159,11 @@ const updateHabit = asyncHandler(async (req: Request, res: Response) => {
       ...(description !== undefined && { description }),
       ...(difficulty !== undefined && { difficulty }),
       ...(badDayPlan !== undefined && { badDayPlan }),
-      ...(resolvedSubjectId !== undefined && { subjectId: resolvedSubjectId }),
+      ...(resolvedSubjects !== undefined && { subjects: resolvedSubjects }),
       ...(resolvedAutoCompleteTime !== undefined && { autoCompleteTime: resolvedAutoCompleteTime }),
       ...(deleted !== undefined && { deleted }),
     },
+    include: { subjects: true },
   });
 
   return res.status(200).json(new ApiResponse(200, updatedHabit, 'Habit updated successfully'));
@@ -271,7 +280,7 @@ const getAllHabitsWithLogs = asyncHandler(async (req: Request, res: Response) =>
       userId: userIdNum,
     },
     include: {
-      subject: true,
+      subjects: true,
       log: {
         where: {
           deleted: false,
@@ -331,7 +340,7 @@ const getHabitDashboardData = asyncHandler(async (req: Request, res: Response) =
         : { deleted: false }),
     },
     include: {
-      subject: true,
+      subjects: true,
     },
   });
 
@@ -472,7 +481,7 @@ const getDeletedHabits = asyncHandler(async (req: Request, res: Response) => {
   const deleted = await prisma.habit.findMany({
     where: { userId: Number(userId), deleted: true },
     include: {
-      subject: true,
+      subjects: true,
       _count: { select: { log: { where: { deleted: false } } } },
     },
     orderBy: { deletedAt: 'desc' },

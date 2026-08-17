@@ -3,6 +3,13 @@ import api from '@/lib/api';
 
 export type HabitDifficulty = 'HIGH' | 'MID' | 'LOW';
 
+export interface HabitSubject {
+  id: number;
+  name: string;
+  color?: string;
+  goalWorkSecs?: number;
+}
+
 export interface Habit {
   id: number;
   name: string;
@@ -11,6 +18,7 @@ export interface Habit {
   autoCompleteTime?: number | null;
   userId: number;
   subjectId?: number | null;
+  subjects?: HabitSubject[];
   badDayPlan?: string | null;
 }
 
@@ -58,7 +66,7 @@ export const useCreateHabit = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (newHabit: Partial<Habit>) => {
+    mutationFn: async (newHabit: Omit<Partial<Habit>, 'subjectId'> & { subjectIds?: number[] }) => {
       const { data } = await api.post('/habits', newHabit);
       return data.data; // ApiResponse.data
     },
@@ -168,7 +176,7 @@ export const useUpdateHabit = () => {
       name,
       description,
       difficulty,
-      subjectId,
+      subjectIds,
       autoCompleteTime,
       badDayPlan,
     }: {
@@ -176,7 +184,7 @@ export const useUpdateHabit = () => {
       name?: string;
       description?: string;
       difficulty?: HabitDifficulty;
-      subjectId?: number | null;
+      subjectIds?: number[];
       autoCompleteTime?: number | null;
       badDayPlan?: string | null;
     }) => {
@@ -184,7 +192,7 @@ export const useUpdateHabit = () => {
         name,
         description,
         difficulty,
-        subjectId,
+        subjectIds,
         autoCompleteTime,
         badDayPlan,
       });

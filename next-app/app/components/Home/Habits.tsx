@@ -113,7 +113,9 @@ export default function Habits({
           habits.map((habit) => {
             const isCompleted = completedHabitIds.has(habit.id);
             const isCompletedMinimum = badDayPlanHabitIds.has(habit.id);
-            const linkedSubject = subjects?.find((s) => s.id === habit.subjectId);
+            const linkedSubject = habit.subjects?.[0]
+              ? subjects?.find((s) => s.id === habit.subjects![0].id)
+              : undefined;
             return (
               <HabitCard
                 key={habit.id}
@@ -145,7 +147,10 @@ export default function Habits({
       <EditHabitDialog
         habit={editingHabit}
         isOpen={isEditDialogOpen}
-        onOpenChange={setIsEditDialogOpen}
+        onOpenChange={(open) => {
+          setIsEditDialogOpen(open);
+          if (!open) setEditingHabit(null);
+        }}
         subjects={subjects}
       />
     </section>

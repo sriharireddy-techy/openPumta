@@ -111,8 +111,7 @@ model Habit {
   name             String
   user             User           @relation(fields: [userId], references: [id], onDelete: Cascade)
   userId           Int
-  subjectId        Int?
-  subject          Subject?       @relation(fields: [subjectId], references: [id], onDelete: SetNull)
+  subjects         Subject[]
   description      String         @default("")
   difficulty       difficulty     @default(MID)
   autoCompleteTime Int?
