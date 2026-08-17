@@ -48,6 +48,8 @@ export default function MainDashboardContainer({
   todos,
   habitsData,
 }: MainDashboardContainerProps) {
+  console.log('focus Logs: ', focusLogs);
+
   const store = useTimerStore();
   const [localNow, setLocalNow] = useState(() => Date.now());
 

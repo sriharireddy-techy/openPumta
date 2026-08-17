@@ -100,6 +100,7 @@ export default function Home() {
           <div className="lg:col-span-12 lg:row-span-12 flex flex-col items-center justify-center h-full min-h-[60vh]">
             <div className="w-full max-w-2xl bg-background rounded-xl border shadow-sm overflow-hidden p-4 lg:p-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
               <Subjects />
+              see how to use this website at:
             </div>
           </div>
         ) : (

@@ -8,7 +8,7 @@ export const sendPushNotificationToUser = async (
   userId: number,
   title: string,
   body: string,
-  data?: object,
+  data?: Record<string, any>,
 ) => {
   const user = await prisma.user.findUnique({
     where: { id: userId },

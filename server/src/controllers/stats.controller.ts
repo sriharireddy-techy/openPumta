@@ -141,11 +141,12 @@ const getDashboardStats = asyncHandler(async (req: Request, res: Response) => {
   recentSubjectLogs.forEach((log: any) => {
     if (!log.endedAt) return;
     const dateStr = getLocalIsoDate(log.startedAt);
-    if (focusTimeByDate[dateStr] !== undefined) {
-      focusTimeByDate[dateStr] += Math.floor(
-        (log.endedAt.getTime() - log.startedAt.getTime()) / 1000,
-      );
+    if (focusTimeByDate[dateStr] === undefined) {
+      focusTimeByDate[dateStr] = 0;
     }
+    focusTimeByDate[dateStr] += Math.floor(
+      (log.endedAt.getTime() - log.startedAt.getTime()) / 1000,
+    );
   });
 
   const focusTimeArray = Object.entries(focusTimeByDate)
@@ -186,9 +187,10 @@ const getDashboardStats = asyncHandler(async (req: Request, res: Response) => {
 
   recentHabitLogs.forEach((log) => {
     const dateStr = getLocalIsoDate(log.startedAt);
-    if (habitsCompletedByDate[dateStr] !== undefined) {
-      habitsCompletedByDate[dateStr].add(log.habitId);
+    if (habitsCompletedByDate[dateStr] === undefined) {
+      habitsCompletedByDate[dateStr] = new Set();
     }
+    habitsCompletedByDate[dateStr].add(log.habitId);
   });
 
   let perfectDaysLast21 = 0;
