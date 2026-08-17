@@ -14,7 +14,9 @@ declare global {
   }
 }
 
-window.__TANSTACK_QUERY_CLIENT__ = queryClient;
+if (typeof window !== 'undefined') {
+  window.__TANSTACK_QUERY_CLIENT__ = queryClient;
+}
 
 export const invalidateSubjectTimerQueries = async () => {
   await Promise.all([
