@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import api from '@/lib/api';
-import { queryClient } from '@/lib/queryClient';
+import { invalidateSubjectTimerQueries, queryClient } from '@/lib/queryClient';
 
 interface User {
   id: number;
@@ -64,6 +64,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
       set({ user: null });
       window.location.href = '/login';
+      await invalidateSubjectTimerQueries();
     } catch (error) {
       console.error('Logout failed', error);
     }
